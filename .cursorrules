@@ -111,8 +111,7 @@ com.whatsappclone
 - Voice call state must be persisted backend-side
 - No call state may exist only on frontend
 
-### Voice Call Module
-
+### Video Call Module
 
 - Video calls must be implemented as a dedicated module
 - Call types:
