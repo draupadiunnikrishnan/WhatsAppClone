@@ -1,0 +1,215 @@
+# WhatsApp Clone – Cursor / AntiGravity Rules
+# (WebRTC Voice & Video Calling)
+
+## GENERAL PRINCIPLES
+- Follow clean architecture and strict separation of concerns
+- Optimize for real-time scalability (millions of concurrent users)
+- No hardcoded values (IDs, roles, URLs, STUN/TURN servers, secrets)
+- Prefer explicit, readable, maintainable code over shortcuts
+- Assume enterprise-level production standards
+- Design for horizontal scaling and event-driven systems
+
+---
+
+## BACKEND – SPRING BOOT RULES
+
+### Architecture
+- Use layered architecture:
+  controller → service → domain → repository
+- Controllers must not contain business logic
+- Services must not depend on controllers
+- Use DTOs; never expose entities directly
+- Each module must be isolated
+- WebRTC signaling must be isolated from REST APIs
+
+### Package Structure
+com.whatsappclone
+ ├── auth
+ ├── security
+ ├── user
+ ├── contact
+ ├── chat
+ │    ├── message
+ │    ├── conversation
+ │    └── attachment
+ ├── voicecall
+ │    ├── signaling
+ │    ├── session
+ │    └── webrtc
+ ├── videocall
+ │    ├── signaling
+ │    ├── session
+ │    └── webrtc
+ ├── presence
+ ├── notification
+ ├── dashboard
+ ├── exception
+ └── config
+
+---
+
+## AUTHENTICATION & AUTHORIZATION
+
+- JWT-based authentication only
+- Stateless session management
+- BCrypt password hashing
+- Token must include:
+  - userId
+  - phoneNumber
+- Only USER role exists currently
+- Design role handling to support future roles (ADMIN, MODERATOR)
+- Secure all APIs except:
+  - Login
+
+---
+
+## REAL-TIME COMMUNICATION RULES
+
+### Signaling
+- WebSocket-based signaling mandatory
+- REST APIs must not be used for call signaling
+- Event-driven communication only
+- Backend is the source of truth for call state
+
+### Presence
+- Presence must be backend-managed
+- Presence states:
+  - ONLINE
+  - OFFLINE
+  - IN_CALL
+- Presence data must be ephemeral (Redis / in-memory store)
+- Frontend must never be the source of truth
+
+---
+
+## WEBRTC – VOICE & VIDEO CALL RULES
+
+### Core Rules
+
+- Backend acts strictly as signaling server
+- Media must flow peer-to-peer only
+- No audio/video streams through backend
+- STUN/TURN servers must be environment-configured
+- ICE server rotation must be supported
+- WebRTC configuration must be extensible for SFU support
+
+### Voice Call Module
+
+- Voice calls must be implemented as a dedicated module
+- Call types:
+  - AUDIO
+- Each voice call must include:
+  - voice_call_session_id
+  - caller_id
+  - receiver_id OR group_id
+  - call_status (INITIATED / RINGING / CONNECTED / ENDED)
+- Handle:
+  - Missed calls
+  - Rejected calls
+  - Network interruptions
+  - Reconnection attempts
+- Voice call state must be persisted backend-side
+- No call state may exist only on frontend
+
+### Voice Call Module
+
+
+- Video calls must be implemented as a dedicated module
+- Call types:
+  - VIDEO
+- Each video call must include:
+  - video_call_session_id
+  - caller_id
+  - receiver_id OR group_id
+  - call_status (INITIATED / RINGING / CONNECTED / ENDED)
+- Handle:
+  - Camera/microphone permission failures
+  - Network drops
+  - Reconnect attempts
+- Video call state must be persisted backend-side
+- Group video calls must be SFU-ready (future scalability)
+- Screen sharing must be designed as an extension, not a hack
+
+---
+
+## DATABASE RULES (POSTGRESQL)
+
+- Use snake_case for all tables and columns
+- All tables must include:
+  - id
+  - is_active
+  - created_at
+  - updated_at
+- Soft delete preferred over hard delete
+- Foreign keys are mandatory
+- Use Flyway or Liquibase for migrations
+
+### Core Tables
+- users
+- contacts
+- conversations
+- messages
+- message_receipts
+- voice_call_sessions
+- voice_call_participants
+- video_call_sessions
+- video_call_participants
+
+---
+
+## FRONTEND – REACT + TYPESCRIPT RULES
+
+### Structure
+src/
+ ├── pages
+ ├── components
+ ├── services
+ ├── hooks
+ ├── context
+ ├── store
+ ├── types
+ └── utils
+
+### Rules
+- Strict TypeScript (no `any`)
+- No API calls directly in components
+- Use services layer for API interaction
+- Route guards mandatory
+- JWT-based auth handling
+- Auto logout on token expiry
+- WebRTC logic must not live inside UI components
+- WebRTC logic must live inside dedicated hooks/services
+
+---
+
+## API DESIGN RULES
+
+- RESTful conventions
+- Proper HTTP status codes
+- Standard response format:
+  - success
+  - data
+  - error
+- Validation errors must be meaningful
+- Real-time events must never be mixed with REST responses
+
+---
+
+## ERROR HANDLING & LOGGING
+
+- Centralized exception handling
+- No stack traces exposed to frontend
+- Structured logging
+- Correlation IDs for real-time events
+- Graceful frontend error handling
+
+---
+
+## AI BEHAVIOR RULES
+
+- Do not invent requirements
+- Do not skip validations
+- Ask for clarification if logic is unclear
+- Follow existing folder structure
+- Prefer extensibility over shortcuts
+- Write maintainable, team-friendly, production-ready code
