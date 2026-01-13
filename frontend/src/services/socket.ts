@@ -16,7 +16,8 @@ export class SocketService {
         if (this.socket) return;
 
         // WS URL - change to wss:// for production
-        this.socket = new WebSocket(`ws://localhost:8080/ws?token=${token}`);
+        const host = window.location.hostname;
+        this.socket = new WebSocket(`ws://${host}:8080/ws?token=${token}`);
 
         this.socket.onopen = () => {
             console.log('WebSocket Connected');
@@ -28,14 +29,18 @@ export class SocketService {
         };
 
         this.socket.onclose = () => {
-            console.log('WebSocket Disconnected');
+            console.log('WebSocket Disconnected. Retrying in 3s...');
             this.socket = null;
-            // Add reconnect logic here
+            setTimeout(() => this.connect(token), 3000);
         };
 
         this.socket.onerror = (error) => {
             console.error('WebSocket Error', error);
         };
+    }
+
+    public isConnected(): boolean {
+        return this.socket !== null && this.socket.readyState === WebSocket.OPEN;
     }
 
     public send(type: string, payload: any, recipientId: string, senderId: string) {

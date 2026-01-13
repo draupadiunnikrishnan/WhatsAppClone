@@ -77,7 +77,13 @@ public class SignalingHandler extends TextWebSocketHandler {
             log.info("Forwarded message type {} from {} to {}", signalingMessage.getType(), senderId, recipientId);
         } else {
             log.warn("Recipient NOT found or offline: {}", recipientId);
-            // Optionally send back a "User Offline" message
+            // Notify sender that recipient is offline
+            SignalingMessage errorMessage = new SignalingMessage();
+            errorMessage.setType("end");
+            errorMessage.setSenderId("SYSTEM");
+            errorMessage.setRecipientId(senderId);
+            errorMessage.setPayload(Map.of("reason", "User is offline"));
+            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(errorMessage)));
         }
     }
 

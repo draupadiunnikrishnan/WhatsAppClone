@@ -38,6 +38,10 @@ export const useCallStore = create<CallStore>((set, get) => ({
     setLocalStream: (stream) => set({ localStream: stream }),
 
     initiateCall: async (receiverId, video = true) => {
+        if (!socket.isConnected()) {
+            alert('Not connected to signaling server. Please wait or refresh.');
+            return;
+        }
         set({ callState: 'OUTGOING', receiverId });
         try {
             const stream = await webrtc.getLocalStream(video, true);
@@ -46,15 +50,17 @@ export const useCallStore = create<CallStore>((set, get) => ({
             webrtc.createPeerConnection();
             webrtc.onRemoteStream = (stream) => set({ remoteStream: stream });
             webrtc.onIceCandidate = (candidate) => {
-                // Assuming "ME" is the current user's ID, which should be retrieved from auth store or passed.
-                // For now, using a placeholder.
-                const currentUserId = useAuthStore.getState().user?.id || "ME";
-                socket.send('candidate', candidate, receiverId, currentUserId);
+                const currentUserEmail = useAuthStore.getState().user?.email;
+                if (currentUserEmail) {
+                    socket.send('candidate', candidate, receiverId, currentUserEmail);
+                }
             };
 
             const offer = await webrtc.createOffer();
-            const currentUserId = useAuthStore.getState().user?.id || "ME";
-            socket.send('offer', offer, receiverId, currentUserId);
+            const currentUserEmail = useAuthStore.getState().user?.email;
+            if (currentUserEmail) {
+                socket.send('offer', offer, receiverId, currentUserEmail);
+            }
         } catch (err) {
             console.error("Error initiating call:", err);
             set({ callState: 'IDLE' });
@@ -72,22 +78,28 @@ export const useCallStore = create<CallStore>((set, get) => ({
         webrtc.createPeerConnection();
         webrtc.onRemoteStream = (stream) => set({ remoteStream: stream });
         webrtc.onIceCandidate = (candidate) => {
-            const currentUserId = useAuthStore.getState().user?.id || "ME"; // Re-added currentUserId for consistency
-            socket.send('candidate', candidate, callerId, currentUserId);
+            const currentUserEmail = useAuthStore.getState().user?.email;
+            if (currentUserEmail) {
+                socket.send('candidate', candidate, callerId, currentUserEmail);
+            }
         };
 
         // The webrtc.handleOffer(pendingOffer) call is implicitly handled within createAnswer(pendingOffer)
         const answer = await webrtc.createAnswer(pendingOffer);
-        const currentUserId = useAuthStore.getState().user?.id || "ME"; // Re-added currentUserId for consistency
-        socket.send('answer', answer, callerId, currentUserId);
+        const currentUserEmail = useAuthStore.getState().user?.email;
+        if (currentUserEmail) {
+            socket.send('answer', answer, callerId, currentUserEmail);
+        }
         set({ pendingOffer: null });
     },
 
     rejectCall: () => {
         const { callerId } = get();
         if (callerId) {
-            const currentUserId = useAuthStore.getState().user?.id || "ME";
-            socket.send('end', {}, callerId, currentUserId);
+            const currentUserEmail = useAuthStore.getState().user?.email;
+            if (currentUserEmail) {
+                socket.send('end', {}, callerId, currentUserEmail);
+            }
         }
         set({ callState: 'IDLE', callerId: null, receiverId: null, pendingOffer: null });
     },
@@ -96,8 +108,10 @@ export const useCallStore = create<CallStore>((set, get) => ({
         const { receiverId, callerId } = get();
         const target = receiverId || callerId;
         if (target) {
-            const currentUserId = useAuthStore.getState().user?.id || "ME";
-            socket.send('end', {}, target, currentUserId);
+            const currentUserEmail = useAuthStore.getState().user?.email;
+            if (currentUserEmail) {
+                socket.send('end', {}, target, currentUserEmail);
+            }
         }
         webrtc.close();
         set({ callState: 'IDLE', localStream: null, remoteStream: null, callerId: null, receiverId: null, pendingOffer: null });

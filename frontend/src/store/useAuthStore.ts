@@ -16,18 +16,20 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-    user: null, // In a real app, you'd decode the JWT to get initial user info or fetch /me
+    user: JSON.parse(localStorage.getItem('user') || 'null'),
     token: localStorage.getItem('token'),
     login: (token: string, email: string) => {
+        const user = { id: 0, email, name: email.split('@')[0] };
         localStorage.setItem('token', token);
-        // Simple mock user set for now, in prod decode JWT or fetch profile
-        set({ token, user: { id: 0, email, name: email.split('@')[0] } });
+        localStorage.setItem('user', JSON.stringify(user));
+        set({ token, user });
     },
     register: (name: string, email: string) => {
-        // Logic handled in component usually, but store can hold state
+        // ...
     },
     logout: () => {
         localStorage.removeItem('token');
+        localStorage.removeItem('user');
         set({ token: null, user: null });
     },
 }));

@@ -26,4 +26,4 @@ jwt:
   expiration: 86400000 # 1 day
 
 cors:
-  allowed-origins: http://localhost:5173 
+  allowed-origins: "*" 

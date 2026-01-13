@@ -20,15 +20,17 @@ export const Login: React.FC = () => {
                 : { email, password };
 
             // Assuming proxy or CORS set up
-            const res = await axios.post(`http://localhost:8080${endpoint}`, payload);
+            const host = window.location.hostname;
+            const res = await axios.post(`http://${host}:8080${endpoint}`, payload);
             const { token } = res.data;
 
             login(token, email);
             SocketService.getInstance().connect(token);
             navigate('/');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Auth Error', error);
-            alert('Authentication failed');
+            const message = error.response?.data?.error || 'Authentication failed';
+            alert(message);
         }
     };
 

@@ -11,8 +11,10 @@ export const Dashboard: React.FC = () => {
     const [targetEmail, setTargetEmail] = useState('');
 
     const handleCall = (video: boolean) => {
-        if (!targetEmail) return;
-        initiateCall(targetEmail, video);
+        const email = targetEmail.trim();
+        if (!email) return;
+        console.log(`Starting ${video ? 'video' : 'voice'} call to:`, email);
+        initiateCall(email, video);
     };
 
     // Listen to signaling events if not global (better done in App or high level effect)

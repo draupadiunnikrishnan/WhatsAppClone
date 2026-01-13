@@ -6,10 +6,12 @@ C:\Projects\WhatsAppClone\backend\src\main\java\com\whatsappclone\signaling\Sign
 C:\Projects\WhatsAppClone\backend\src\main\java\com\whatsappclone\service\AuthService.java
 C:\Projects\WhatsAppClone\backend\src\main\java\com\whatsappclone\signaling\SignalingHandler.java
 C:\Projects\WhatsAppClone\backend\src\main\java\com\whatsappclone\service\CallService.java
+C:\Projects\WhatsAppClone\backend\src\main\java\com\whatsappclone\dto\RegisterRequest.java
 C:\Projects\WhatsAppClone\backend\src\main\java\com\whatsappclone\WhatsAppCloneApplication.java
 C:\Projects\WhatsAppClone\backend\src\main\java\com\whatsappclone\config\SecurityConfig.java
 C:\Projects\WhatsAppClone\backend\src\main\java\com\whatsappclone\repository\CallSessionRepository.java
 C:\Projects\WhatsAppClone\backend\src\main\java\com\whatsappclone\exception\GlobalExceptionHandler.java
+C:\Projects\WhatsAppClone\backend\src\main\java\com\whatsappclone\dto\LoginRequest.java
 C:\Projects\WhatsAppClone\backend\src\main\java\com\whatsappclone\presence\PresenceService.java
 C:\Projects\WhatsAppClone\backend\src\main\java\com\whatsappclone\domain\CallSession.java
 C:\Projects\WhatsAppClone\backend\src\main\java\com\whatsappclone\domain\User.java
