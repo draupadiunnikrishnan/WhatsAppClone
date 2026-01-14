@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
@@ -6,7 +6,7 @@ import { useAuthStore } from './store/useAuthStore';
 import { useCallStore } from './store/useCallStore';
 import { SocketService } from './services/socket';
 
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+const ProtectedRoute = ({ children }: { children: React.ReactElement }) => {
   const { token } = useAuthStore();
   if (!token) return <Navigate to="/login" replace />;
   return children;
@@ -14,7 +14,7 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
 
 function App() {
   const { token, user } = useAuthStore();
-  const { handleSignal, incomingCall } = useCallStore();
+  const { incomingCall } = useCallStore();
 
   useEffect(() => {
     if (token && user) {

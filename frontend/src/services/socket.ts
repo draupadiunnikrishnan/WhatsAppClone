@@ -1,3 +1,5 @@
+import { WS_BASE_URL } from '../config';
+
 export class SocketService {
     private socket: WebSocket | null = null;
     private listeners: Map<String, Function[]> = new Map();
@@ -16,11 +18,13 @@ export class SocketService {
         if (this.socket) return;
 
         // WS URL - change to wss:// for production
-        const host = window.location.hostname;
-        this.socket = new WebSocket(`ws://${host}:8080/ws?token=${token}`);
+        const url = `${WS_BASE_URL}/ws?token=${token}`;
+        console.log('Connecting to WebSocket:', url);
+        this.socket = new WebSocket(url);
 
         this.socket.onopen = () => {
             console.log('WebSocket Connected');
+            this.emit('connectionChange', true);
         };
 
         this.socket.onmessage = (event) => {
@@ -30,6 +34,7 @@ export class SocketService {
 
         this.socket.onclose = () => {
             console.log('WebSocket Disconnected. Retrying in 3s...');
+            this.emit('connectionChange', false);
             this.socket = null;
             setTimeout(() => this.connect(token), 3000);
         };

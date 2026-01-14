@@ -30,23 +30,47 @@ public class SignalingHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         // Extract token from query param ?token=...
         URI uri = session.getUri();
-        String query = uri.getQuery();
+        log.info("WebSocket Handshake started. URI: {}", uri);
+        String query = (uri != null) ? uri.getQuery() : null;
         String token = null;
+
         if (query != null && query.contains("token=")) {
-            token = query.split("token=")[1].split("&")[0];
+            try {
+                // More robust extraction in case of multiple params or encoding
+                for (String param : query.split("&")) {
+                    if (param.startsWith("token=")) {
+                        token = param.substring(6);
+                        break;
+                    }
+                }
+                log.info("Extracted token: {}...",
+                        (token != null && token.length() > 10) ? token.substring(0, 10) : "null");
+            } catch (Exception e) {
+                log.error("Error parsing query params: {}", e.getMessage());
+            }
+        } else {
+            log.warn("Handshake query is missing 'token' parameter. Query: {}", query);
         }
 
         if (token != null) {
             try {
                 String username = jwtUtil.extractUsername(token);
+                if (username != null) {
+                    username = username.toLowerCase(); // Normalization
+                }
                 if (jwtUtil.validateToken(token, username)) {
+                    session.getAttributes().put("userId", username);
                     presenceService.addUserSession(username, session);
-                    log.info("User connected: {}", username);
+                    log.info("User connected and session registered: {}", username);
                     return;
+                } else {
+                    log.warn("Connection REJECTED for user: {} (Token invalid or expired)", username);
                 }
             } catch (Exception e) {
-                log.error("Invalid token", e);
+                log.error("Invalid token attempt: {}", e.getMessage());
             }
+        } else {
+            log.warn("Connection REJECTED: No token provided in query params");
         }
         session.close(CloseStatus.POLICY_VIOLATION);
     }
@@ -59,37 +83,57 @@ public class SignalingHandler extends TextWebSocketHandler {
         String recipientId = signalingMessage.getRecipientId();
         String senderId = signalingMessage.getSenderId();
 
-        // Persist State based on type
-        if ("offer".equals(signalingMessage.getType())) {
-            // Assume payload contains type info or default to VIDEO for now
-            callService.createCall(senderId, recipientId, CallSession.CallType.VIDEO);
-        } else if ("answer".equals(signalingMessage.getType())) {
-            // Find active call and update to CONNECTED (Simplified)
-            callService.answerCall(senderId, recipientId);
-        } else if ("end".equals(signalingMessage.getType())) {
-            // Find active call and update to ENDED
-            callService.endCall(senderId, recipientId);
+        if (recipientId != null)
+            recipientId = recipientId.toLowerCase();
+        if (senderId != null)
+            senderId = senderId.toLowerCase();
+
+        // Persist State based on type - Wrap in try-catch to avoid blocking signal
+        // forwarding
+        try {
+            if ("offer".equals(signalingMessage.getType())) {
+                log.info("Creating call session: {} -> {}", senderId, recipientId);
+                callService.createCall(senderId, recipientId, CallSession.CallType.VIDEO);
+            } else if ("answer".equals(signalingMessage.getType())) {
+                log.info("Answering call session: {} -> {}", senderId, recipientId);
+                callService.answerCall(senderId, recipientId);
+            } else if ("end".equals(signalingMessage.getType())) {
+                log.info("Ending call session: {} -> {}", senderId, recipientId);
+                callService.endCall(senderId, recipientId);
+            }
+        } catch (Exception e) {
+            log.error("Error updating call state in database: {}", e.getMessage());
+            // Continue signaling even if DB update fails
         }
 
         WebSocketSession recipientSession = presenceService.getSession(recipientId);
         if (recipientSession != null && recipientSession.isOpen()) {
             recipientSession.sendMessage(message);
-            log.info("Forwarded message type {} from {} to {}", signalingMessage.getType(), senderId, recipientId);
+            log.info("FORWARDED: {} -> {} (Type: {})", senderId, recipientId, signalingMessage.getType());
         } else {
-            log.warn("Recipient NOT found or offline: {}", recipientId);
+            log.warn("FAILED TO FORWARD: {} -> {} (Type: {}). Recipient offline or session not found.",
+                    senderId, recipientId, signalingMessage.getType());
+            log.info("Currently online users: {}", presenceService.getActiveUsers().keySet());
+
             // Notify sender that recipient is offline
             SignalingMessage errorMessage = new SignalingMessage();
             errorMessage.setType("end");
             errorMessage.setSenderId("SYSTEM");
             errorMessage.setRecipientId(senderId);
-            errorMessage.setPayload(Map.of("reason", "User is offline"));
+            errorMessage.setPayload(Map.of("reason", "User " + recipientId + " is offline"));
             session.sendMessage(new TextMessage(objectMapper.writeValueAsString(errorMessage)));
         }
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        presenceService.removeSession(session);
-        log.info("Session closed: {}", session.getId());
+        String userId = (String) session.getAttributes().get("userId");
+        if (userId != null) {
+            presenceService.removeUserSession(userId);
+            log.info("User session REMOVED: {} (Session ID: {})", userId, session.getId());
+        } else {
+            presenceService.removeSession(session);
+            log.info("Anonymous session closed: {}", session.getId());
+        }
     }
 }

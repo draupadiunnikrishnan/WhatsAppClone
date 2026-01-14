@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import axios from 'axios';
+// axios is imported but not used in the snippet provided
 
 interface User {
     id: number;
@@ -19,12 +19,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     user: JSON.parse(localStorage.getItem('user') || 'null'),
     token: localStorage.getItem('token'),
     login: (token: string, email: string) => {
-        const user = { id: 0, email, name: email.split('@')[0] };
+        const normalizedEmail = email.toLowerCase();
+        const user = { id: 0, email: normalizedEmail, name: normalizedEmail.split('@')[0] };
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));
         set({ token, user });
     },
-    register: (name: string, email: string) => {
+    register: (_name: string, _email: string) => {
         // ...
     },
     logout: () => {

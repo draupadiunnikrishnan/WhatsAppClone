@@ -2,34 +2,48 @@ import React, { useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useCallStore } from '../store/useCallStore';
 import { CallInterface } from '../components/CallInterface';
-import { Phone, Video, LogOut } from 'lucide-react';
-import { SocketService } from '../services/socket';
-
+import { Phone, Video, LogOut, ShieldAlert } from 'lucide-react';
 export const Dashboard: React.FC = () => {
     const { user, logout } = useAuthStore();
-    const { callState, initiateCall, acceptCall, rejectCall, callerId } = useCallStore();
+    const { callState, initiateCall, acceptCall, rejectCall, callerId, signalingConnected, isVideoCall } = useCallStore();
     const [targetEmail, setTargetEmail] = useState('');
 
     const handleCall = (video: boolean) => {
-        const email = targetEmail.trim();
+        const email = targetEmail.trim().toLowerCase();
         if (!email) return;
         console.log(`Starting ${video ? 'video' : 'voice'} call to:`, email);
         initiateCall(email, video);
     };
 
-    // Listen to signaling events if not global (better done in App or high level effect)
 
     return (
         <div className="min-h-screen bg-darker p-4 text-white">
             <header className="flex justify-between items-center mb-8 p-4 bg-dark rounded-lg">
                 <h1 className="text-xl font-bold">WhatsApp Clone</h1>
                 <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 mr-2">
+                        <div className={`w-3 h-3 rounded-full ${signalingConnected ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse'}`}></div>
+                        <span className="text-xs text-gray-400">{signalingConnected ? 'Online' : 'Offline'}</span>
+                    </div>
                     <span>{user?.email}</span>
-                    <button onClick={logout} className="p-2 bg-red-600 rounded-full hover:bg-red-700">
+                    <button onClick={logout} className="p-2 bg-red-600 rounded-full hover:bg-red-700 ml-2">
                         <LogOut size={16} />
                     </button>
                 </div>
             </header>
+
+            {(!window.isSecureContext && window.location.hostname !== 'localhost') && (
+                <div className="max-w-md mx-auto mb-6 p-4 bg-amber-900/40 border border-amber-600/50 rounded-lg flex items-start gap-3">
+                    <ShieldAlert className="text-amber-500 shrink-0" size={20} />
+                    <div>
+                        <h3 className="text-amber-500 font-bold text-sm">Insecure Context Detected</h3>
+                        <p className="text-xs text-gray-300 mt-1">
+                            Browser security blocks WebRTC (Camera/Mic) on non-HTTPS connections.
+                            To test between machines, use <b>localhost</b> or set up <b>HTTPS</b>.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             <div className="max-w-md mx-auto bg-dark p-6 rounded-lg">
                 <h2 className="text-lg mb-4">Start a Call</h2>
@@ -65,7 +79,7 @@ export const Dashboard: React.FC = () => {
                         </div>
                         <div className="text-center">
                             <h3 className="text-xl font-bold">{callerId}</h3>
-                            <p className="text-gray-400">Incoming Video Call...</p>
+                            <p className="text-gray-400">Incoming {isVideoCall ? 'Video' : 'Voice'} Call...</p>
                         </div>
                         <div className="flex gap-4">
                             <button

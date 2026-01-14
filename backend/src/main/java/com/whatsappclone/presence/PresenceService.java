@@ -23,7 +23,7 @@ public class PresenceService {
     }
 
     public void removeSession(WebSocketSession session) {
-        activeSessions.values().remove(session);
+        activeSessions.entrySet().removeIf(entry -> entry.getValue().equals(session));
     }
 
     public WebSocketSession getSession(String userId) {
@@ -32,5 +32,15 @@ public class PresenceService {
 
     public boolean isUserOnline(String userId) {
         return activeSessions.containsKey(userId) && activeSessions.get(userId).isOpen();
+    }
+
+    public Map<String, String> getActiveUsers() {
+        Map<String, String> users = new java.util.HashMap<>();
+        activeSessions.forEach((id, session) -> {
+            if (session.isOpen()) {
+                users.put(id, session.getId());
+            }
+        });
+        return users;
     }
 }

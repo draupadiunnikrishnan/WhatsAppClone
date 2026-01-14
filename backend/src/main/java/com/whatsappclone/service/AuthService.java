@@ -18,19 +18,21 @@ public class AuthService {
     private final JwtUtil jwtUtil;
 
     public String register(String name, String email, String password) {
-        if (userRepository.findByEmail(email).isPresent()) {
+        String normalizedEmail = email.toLowerCase();
+        if (userRepository.findByEmail(normalizedEmail).isPresent()) {
             throw new RuntimeException("User already exists");
         }
         User user = new User();
         user.setName(name);
-        user.setEmail(email);
+        user.setEmail(normalizedEmail);
         user.setPassword(passwordEncoder.encode(password));
         User savedUser = userRepository.save(user);
         return jwtUtil.generateToken(savedUser.getEmail(), savedUser.getId());
     }
 
     public String login(String email, String password) {
-        User user = userRepository.findByEmail(email)
+        String normalizedEmail = email.toLowerCase();
+        User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!passwordEncoder.matches(password, user.getPassword())) {

@@ -34,11 +34,13 @@ export class WebRTCService {
 
         this.peerConnection.onicecandidate = (event) => {
             if (event.candidate && this.onIceCandidate) {
+                console.log('New local ICE candidate:', event.candidate.type);
                 this.onIceCandidate(event.candidate);
             }
         };
 
         this.peerConnection.ontrack = (event) => {
+            console.log('Remote track received:', event.track.kind);
             if (event.streams && event.streams[0]) {
                 this.remoteStream = event.streams[0];
                 if (this.onRemoteStream) this.onRemoteStream(this.remoteStream);
@@ -47,10 +49,15 @@ export class WebRTCService {
 
         if (this.localStream) {
             this.localStream.getTracks().forEach(track => {
-                this.peerConnection?.addTrack(track, this.localStream!);
+                const senders = this.peerConnection?.getSenders();
+                const alreadyAdded = senders?.some(s => s.track === track);
+                if (!alreadyAdded) {
+                    this.peerConnection?.addTrack(track, this.localStream!);
+                }
             });
         }
     }
+
 
     public async createOffer(): Promise<RTCSessionDescriptionInit> {
         if (!this.peerConnection) this.createPeerConnection();
@@ -74,6 +81,7 @@ export class WebRTCService {
 
     public async handleCandidate(candidate: RTCIceCandidateInit) {
         if (!this.peerConnection) return;
+        console.log('Adding remote ICE candidate');
         await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
     }
 

@@ -1,11 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { useCallStore } from '../store/useCallStore';
-import { Mic, MicOff, Video, VideoOff, PhoneOff } from 'lucide-react';
-import { useAuthStore } from '../store/useAuthStore';
+import { Mic, Video, PhoneOff } from 'lucide-react';
+// useAuthStore was imported but not used
 
 export const CallInterface: React.FC = () => {
-    const { localStream, remoteStream, endCall, callState, receiverId, callerId } = useCallStore();
-    const { user } = useAuthStore();
+    const { localStream, remoteStream, endCall, callState, receiverId } = useCallStore();
     const localVideoRef = useRef<HTMLVideoElement>(null);
     const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
@@ -22,7 +21,7 @@ export const CallInterface: React.FC = () => {
     }, [remoteStream]);
 
 
-    const isVideoCall = true; // Assume true for now or get from callType
+    // const isVideoCall = true; // Assume true for now or get from callType
 
     if (callState === 'IDLE' && !localStream) return null;
 

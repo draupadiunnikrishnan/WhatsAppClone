@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
 import { SocketService } from '../services/socket';
+import { API_BASE_URL } from '../config';
 
 export const Login: React.FC = () => {
     const [email, setEmail] = useState('');
@@ -20,8 +21,7 @@ export const Login: React.FC = () => {
                 : { email, password };
 
             // Assuming proxy or CORS set up
-            const host = window.location.hostname;
-            const res = await axios.post(`http://${host}:8080${endpoint}`, payload);
+            const res = await axios.post(`${API_BASE_URL}${endpoint}`, payload);
             const { token } = res.data;
 
             login(token, email);
